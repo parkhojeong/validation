@@ -108,7 +108,7 @@ public class ValidationItemControllerV2 {
         return "redirect:/validation/v2/items/{itemId}";
     }
 
-    @PostMapping("/add")
+    // @PostMapping("/add")
     public String addItemV3(@ModelAttribute Item item, BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model) {
 
         if(!StringUtils.hasText(item.getItemName())){
@@ -127,6 +127,42 @@ public class ValidationItemControllerV2 {
         if(item.getPrice() != null && item.getQuantity() != null && item.getPrice() * item.getQuantity() < 10_000){
             int resultPrice = item.getPrice() * item.getQuantity();
             bindingResult.addError(new ObjectError("item", new String[]{"totalPriceMin"}, new Object[]{10000, resultPrice}, null));
+        }
+
+        if(bindingResult.hasErrors()){
+            log.info("validation error : {}", bindingResult);
+            return "validation/v2/addForm";
+        }
+
+        Item savedItem = itemRepository.save(item);
+        redirectAttributes.addAttribute("itemId", savedItem.getId());
+        redirectAttributes.addAttribute("status", true);
+        return "redirect:/validation/v2/items/{itemId}";
+    }
+
+    
+    @PostMapping("/add")
+    public String addItemV4(@ModelAttribute Item item, BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model) {
+
+        log.info("objectName = {}", bindingResult.getObjectName());
+        log.info("target = {}", bindingResult.getTarget());
+
+        if(!StringUtils.hasText(item.getItemName())){
+            bindingResult.rejectValue("itemName", "required"); // required.item.itemName
+        }
+
+        if(item.getPrice() == null || item.getPrice() < 1000 || item.getQuantity() > 1_000_000){
+            bindingResult.rejectValue("price", "range", new Object[]{1000, 1_000_000}, null); // range.item.price
+        }
+
+        if(item.getQuantity() == null || item.getQuantity() >= 9_999){
+            bindingResult.rejectValue("quantity", "max", new Object[]{9_999}, null); // max.item.quantity
+        }
+
+        // complex rule
+        if(item.getPrice() != null && item.getQuantity() != null && item.getPrice() * item.getQuantity() < 10_000){
+            int resultPrice = item.getPrice() * item.getQuantity();
+            bindingResult.reject("totalPriceMin", new Object[]{10000, resultPrice}, null);
         }
 
         if(bindingResult.hasErrors()){
