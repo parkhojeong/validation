@@ -44,7 +44,7 @@ public class ValidationItemControllerV2 {
     }
 
     // parameter order: BindingResult after @ModelAttribute
-    @PostMapping("/add")
+    // @PostMapping("/add")
     public String addItemV1(@ModelAttribute Item item, BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model) {
 
         if(!StringUtils.hasText(item.getItemName())){
@@ -57,6 +57,39 @@ public class ValidationItemControllerV2 {
 
         if(item.getQuantity() == null || item.getQuantity() >= 9_999){
             bindingResult.addError(new FieldError("item", "quantity", "quantity must be 1 ~ 9,999"));
+        }
+
+        // complex rule
+        if(item.getPrice() != null && item.getQuantity() != null && item.getPrice() * item.getQuantity() < 10_000){
+            bindingResult.addError(new ObjectError("item", "price * quantity must be 10,000 or more"));
+        }
+
+        if(bindingResult.hasErrors()){
+            log.info("validation error : {}", bindingResult);
+            return "validation/v2/addForm";
+        }
+
+        Item savedItem = itemRepository.save(item);
+        redirectAttributes.addAttribute("itemId", savedItem.getId());
+        redirectAttributes.addAttribute("status", true);
+        return "redirect:/validation/v2/items/{itemId}";
+    }
+
+    @PostMapping("/add")
+    public String addItemV2(@ModelAttribute Item item, BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model) {
+
+        if(!StringUtils.hasText(item.getItemName())){
+            bindingResult.addError(new FieldError("item", "itemName", item.getItemName(), false, null, null, "item name is required"));
+        }
+
+        if(item.getPrice() == null || item.getPrice() < 1000 || item.getQuantity() > 1_000_000){
+            System.out.println("item.getPrice() = " + item.getPrice());
+            System.out.println("bindingResult = " + bindingResult.getFieldErrors());
+            bindingResult.addError(new FieldError("item", "price", null,false, null,null,"price must be 1,000 ~ 1,000,000"));
+        }
+
+        if(item.getQuantity() == null || item.getQuantity() >= 9_999){
+            bindingResult.addError(new FieldError("item", "quantity", item.getQuantity(),false,null,null,"quantity must be 1 ~ 9,999"));
         }
 
         // complex rule
