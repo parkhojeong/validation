@@ -7,12 +7,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Controller
@@ -42,32 +43,29 @@ public class ValidationItemControllerV2 {
         return "validation/v2/addForm";
     }
 
+    // parameter order: BindingResult after @ModelAttribute
     @PostMapping("/add")
-    public String addItem(@ModelAttribute Item item, RedirectAttributes redirectAttributes, Model model) {
-
-        // validation error result store
-        Map<String, String> errors = new HashMap<>();
+    public String addItemV1(@ModelAttribute Item item, BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model) {
 
         if(!StringUtils.hasText(item.getItemName())){
-            errors.put("itemName", "item name is required");
+            bindingResult.addError(new FieldError("item", "itemName", "item name is required"));
         }
 
         if(item.getPrice() == null || item.getPrice() < 1000 || item.getQuantity() > 1_000_000){
-            errors.put("price", "price must be 1,000 ~ 1,000,000");
+            bindingResult.addError(new FieldError("item", "price", "price must be 1,000 ~ 1,000,000"));
         }
 
         if(item.getQuantity() == null || item.getQuantity() >= 9_999){
-            errors.put("quantity", "quantity must be 1 ~ 9,999");
+            bindingResult.addError(new FieldError("item", "quantity", "quantity must be 1 ~ 9,999"));
         }
 
         // complex rule
         if(item.getPrice() != null && item.getQuantity() != null && item.getPrice() * item.getQuantity() < 10_000){
-            errors.put("globalError", "price * quantity must be 10,000 or more");
+            bindingResult.addError(new ObjectError("item", "price * quantity must be 10,000 or more"));
         }
 
-        if(!errors.isEmpty()){
-            log.info("validation error : {}", errors);
-            model.addAttribute("errors", errors);
+        if(bindingResult.hasErrors()){
+            log.info("validation error : {}", bindingResult);
             return "validation/v2/addForm";
         }
 
