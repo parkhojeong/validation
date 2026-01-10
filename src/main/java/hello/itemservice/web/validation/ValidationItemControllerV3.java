@@ -61,14 +61,25 @@ public class ValidationItemControllerV3 {
     }
 
     @GetMapping("/{itemId}/edit")
-    public String editForm(@PathVariable Long itemId, Model model) {
+    public String editForm(@PathVariable Long itemId,Model model) {
         Item item = itemRepository.findById(itemId);
         model.addAttribute("item", item);
         return "validation/v3/editForm";
     }
 
     @PostMapping("/{itemId}/edit")
-    public String edit(@PathVariable Long itemId, @ModelAttribute Item item) {
+    public String edit(@PathVariable Long itemId,@Validated @ModelAttribute Item item, BindingResult bindingResult) {
+        // complex rule
+        if(item.getPrice() != null && item.getQuantity() != null && item.getPrice() * item.getQuantity() < 10_000){
+            int resultPrice = item.getPrice() * item.getQuantity();
+            bindingResult.reject("totalPriceMin", new Object[]{10000, resultPrice}, null);
+        }
+
+        if(bindingResult.hasErrors()){
+            log.info("validation error : {}", bindingResult);
+            return "validation/v3/editForm";
+        }
+
         itemRepository.update(itemId, item);
         return "redirect:/validation/v3/items/{itemId}";
     }
