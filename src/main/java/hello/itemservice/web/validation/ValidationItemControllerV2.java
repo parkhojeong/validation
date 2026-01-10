@@ -156,6 +156,7 @@ public class ValidationItemControllerV2 {
         }*/
 
 
+        // codes [typeMismatch.item.price,typeMismatch.price,typeMismatch.java.lang.Integer,typeMismatch]
         if(item.getPrice() == null || item.getPrice() < 1000 || item.getQuantity() > 1_000_000){
             bindingResult.rejectValue("price", "range", new Object[]{1000, 1_000_000}, null); // range.item.price
         }
